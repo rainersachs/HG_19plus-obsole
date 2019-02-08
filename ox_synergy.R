@@ -35,14 +35,6 @@ Y_0 = 0.0275 #background HG prevalence, 0.0275 default, calculated separately fr
 
 #================================ DER MODELS ==================================#
 
-#================ PHOTON MODEL =================#
-# Linear model fit on beta_decay_data dataset. 
-# We will never recalculate this unless new data comes in but here it is 
-# just in case.
-
-# beta_decay_lm <- lm(HG ~ dose + I(dose ^ 2), data = beta_decay_data)
-# summary(beta_decay_lm, correlation = TRUE)
-
 #=============== subsets of 1-ion dataframe =================#
 # (HZE = high charge and energy; 
 HZE_data <- select(filter(ion_data, Z > 3),1:length(ion_data[1,]))# Includes 1-ion data iff Z > 3
