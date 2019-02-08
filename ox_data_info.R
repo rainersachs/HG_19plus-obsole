@@ -58,7 +58,7 @@ mix_data =  data.frame(read.csv("ox_mix_data.csv"))
 # The two .csv files contain all input HG data. Changes in the data set such as additions, corrections, or deletions should be made only in the .csv files. Such changes will then be implemented automatically by the scripts everywhere else.
 
 # The following, which shows how to compute ion speed and the Katz amorphous track structure parameter,
-# will be used for adding Cucinotta's models in 16 Chang to our scripts and comparing them to our more parsimonious models.
+# may be used for adding Cucinotta's models in 16 Chang to our scripts and comparing them to our more parsimonious models.
 # GeVu is kinetic energy per atomic mass unit. An example for 670Ne20 is GeVu =10^-3*670.
 # The calculations here can and will approximate Z_eff by Z, e.g. Z_eff = 10 for Ne.
 #Katz = 1/round(Z^2 * (2.57 * GeVu ^2 + 4.781 * GeVu + 2.233) / (2.57 * GeVu ^2 + 4.781 * GeVu), 3) 
