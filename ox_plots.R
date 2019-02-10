@@ -88,7 +88,7 @@ dvchk <- 0.2*0:200
 plot(c(-.01, 40), c(-.02, .4), pch = 19, col = 'white', ann = FALSE, bty = 'u')
 LET = 193
 lines(dvchk, Y_0 + calibrated_HZE_nte_der(dvchk, LET))
-lines(dvchk, Y_0 + calibrated_HZE_nte4_der(dvchk, LET), col = 'red')
+#lines(dvchk, Y_0 + calibrated_HZE_nte4_der(dvchk, LET), col = 'red')
 lines(dvchk, Y_0 + calibrated_HZE_te_der(dvchk, LET), col= 'purple')
 # mdf %>% filter(Z < 3 & d>0) # shows .R grammar for subsetting data base
 visual_data <- ion_data %>% filter (LET == 193) # needs number 193 not name??
