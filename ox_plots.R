@@ -247,7 +247,6 @@ errbar(40,.325, yplus  = .325 +  observed[["SD"]],
 
 legend(x = "bottomright", legend = "95%CI not SD", cex=0.6)
 # pch = c(19,19), cex = 1, inset = 0.025)
-
 #=============================================================#
 #=== Fig. 7A. 80% LowLET and 4 HZE Ions CI included=============#
 #=============================================================#
@@ -286,7 +285,9 @@ lines(ci_data[,"dose"], ci_data[, "O"],
 #        lwd = c(2, 2, 2, 2, 2, 3, 2), 
 #        lty = c(1, 1, 1, 1,  1, 1, 2), cex = 0.3, inset = 0.025)
 
-# Fe56 (600 MeV/u) and Si28 in equal proportions for a total of 40 cGy
+#=========================================================================#
+#===== Fe56 (600 MeV/u) and Si28 in equal proportions for a total of 40 cGy =====#
+#=========================================================================#
 # Declare ratios and LET values for plot
 ratios <- c(1/2, 1/2)
 LET_vals <- c(193, 70)
