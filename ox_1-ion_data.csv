@@ -1,4 +1,4 @@
- dose ,     Z,    LET,  tum,atRisk,Prev,SD,Nweight,     SKE,       u,     beta,    Katz,Beam,  place,time,notes
+ dose ,     Z,    LET,  tum,atRisk,Prev,SD,NWeight,     SKE,       u,     beta,    Katz,Beam,  place,time,notes
 40,1,0.4,4,44,0.090909091,0.043339209,532.4,250,1,0.614,2.65,p,LBL,Alpen,Katz was calculated from beta as (Z/beta)^2; beta was calculated from SKE and u by relativistic kinetic energy equation. RKS sould double check the beta calculation sometime but we will probably never need beta or Katz
 60,1,0.4,3,37,0.081081081,0.044874281,496.5980392,250,1,0.614,2.65,p,NSRL,Chang19,
 80,1,0.4,8,41,0.195121951,0.061890812,261.0643939,250,1,0.614,2.65,p,LBL,Alpen,
