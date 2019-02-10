@@ -63,41 +63,6 @@ calibrated_HZE_nte_der <- function(dose, LET, coef = HZE_nte_model_coef) { # Cal
   return(1 - exp( - calibrated_nte_hazard_func(dose, LET, coef)))
 }
 
-#== HZE 4-param NTE model. Suggested by visual inspection of the HZE data =====#  
-#== Inspection suggested a non-monotonically increasing shape at low doses ====#
-ponent= 1.4 # user-adjustable parameter for this model. ponent 1 is a possibe value
-HZE_nte4_model <- nls(# Calibrate params in model modifying 17Cuc. hazard function NTE models
-  #Prev ~ Y_0 + (1 - exp ( - (a4a1 * LET * dose * exp( - a4a2 * LET)
-  #above is older model, nested in the newer model below via setting lam4=0
-  Prev ~ Y_0 + (1 - exp ( - (a4a1 * LET * dose * exp( - a4a2 * LET)*(1-exp(-lam4*(dose^(ponent))))
-                               + (1 - exp( - phi * dose)) * k4k1*exp(-lam4*(dose^(ponent)))))), 
-  data = HZE_data, weights = NWeight,
-  start = list(a4a1 = .0001, a4a2 = .004, k4k1 = .1, lam4= 0.01))
-# Weird: starting lam4 between about 0.004 and 0.05 work and give lam4 about 0.2.
-# But starting lam4 values outside that range don't work, not even lam4 around 0.2
-summary(HZE_nte4_model, correlation = TRUE) # Parameter values & accuracy.
-# Neither k4k1 nor lam4 are significantly different from zero. That lack of 
-# parsimony suggests possible near-collinearity and near-non-identifiability, so 
-# (in January 2019) Sachs expected this 
-# model to do badly in AIC and BIC comparsons. Actually it beat out the HZE TE
-# model, while duly losing to the HZE NTE model. That surprise indicates trying
-# LOO cross validation tests as well. Hopefully the HZE NTE4 model loses to the HZE # TE model in LOO (and surely it should never beat out our main HZE model, the 
-# 3-parameter NTE one, in any tests!?)
-vcov(HZE_nte4_model) # Variance-covariance matrix.
-HZE_nte4_model_coef <- coef(HZE_nte4_model) # Calibrated central values of the 4 parameters.
-a4a1=HZE_nte4_model_coef['a4a1']; a4a2=HZE_nte4_model_coef['a4a2']
-k4k1=HZE_nte4_model_coef['k4k1']; lam4=HZE_nte4_model_coef['lam4']
-# # The DER, = 0 at dose 0.
-calibrated_nte4_hazard_func <- function(dose, LET, coef) { # Calibrated hazard function. 
-   return(coef[1] * LET * dose * exp( - coef[2] * LET) 
-          + (1 - exp( - phi * dose)) * coef[3]*exp(-coef[4]*(dose^(ponent))))
- } 
-# 
-calibrated_HZE_nte4_der <- function(dose, LET, coef = HZE_nte4_model_coef) { # Calibrated HZE NTE DER.
-   return(1 - exp( - calibrated_nte4_hazard_func(dose, LET, coef)))
-}
-dose=0.1*0:499 #check visually to make sure this has the desired shape
-plot(dose, calibrated_HZE_nte4_der(dose,20), type='l')
 
 #================ HZE/TE MODEL =================#
 # (TE = targeted effects only). This chunk runs and gives good results.
@@ -143,8 +108,8 @@ low_LET_slope <- function(dose, LET) {
 
 
 #=========================== INFORMATION CRITERION ============================#
-info_crit_table <- cbind(AIC(HZE_te_model, HZE_nte_model, HZE_nte4_model), 
-                         BIC(HZE_te_model, HZE_nte_model, HZE_nte4_model))
+info_crit_table <- cbind(AIC(HZE_te_model, HZE_nte_model), 
+                         BIC(HZE_te_model, HZE_nte_model))
 print(info_crit_table)
 
 ##=================== Cross validation ====================#
@@ -178,31 +143,7 @@ for (i in 1:length(set_list)) {
 }
 errors = (theoretical - actual_prev)^2
 NTE_cv = weighted.mean(errors, HZE_data$NWeight)
-# 
-# ## Attempted cross Validation for NTE4 Model:
-# theoretical = vector()
-# for (i in 1:8) { #this leads to error message, probably because starting values below are poor in some Monte Carlo runs
-# or some parameters are negative. Non-linear regression apparently can't handle Poisson or Weibull error assumptions.
-# #for (i in c(1:3,5:7)) { never leave out Fe193, which has the most data points. Doesn't work either.
-#   test = set_list[[i]]
-#   excluded_list = set_list[-i]
-#   train = excluded_list[[1]]
-#   for (j in 2:length(excluded_list)) {
-#     train = rbind(train, excluded_list[[j]])
-#   }
-#   HZE_nte4_model <- nls(Prev ~ Y_0 + (1 - exp ( - (a4a1 * LET * dose * exp( - a4a2 * LET)*(1-exp(-lam4*(dose^(ponent))))
-#                                                    + (1 - exp( - phi * dose)) * k4k1*exp(-lam4*(dose^(ponent)))))),
-#                         data = train, weights = NWeight,
-#                         start = list(a4a1 = .0001, a4a2 = .004, k4k1 = .1, lam4= 0.01))
-#   predic = predict(HZE_nte4_model, test)
-#   theoretical = c(theoretical, predic)
-# }
-# errors = (theoretical - actual_prev)^2
-# NTE4_cv = weighted.mean(errors, HZE_data$NWeight)
-# Prev ~ Y_0 + (1 - exp ( - (a4a1 * LET * dose * exp( - a4a2 * LET)*(1-exp(-lam4*(dose^(ponent))))
-#                            + (1 - exp( - phi * dose)) * k4k1*exp(-lam4*(dose^(ponent))))))),
-# data = train, weights = NWeight,
-# start = list(a4a1 = .0001, a4a2 = .004, k4k1 = .1, lam4= 0.02))
+
 
 #======= Cross Validation for TE Model  ========#
 theoretical = vector()
