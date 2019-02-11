@@ -72,13 +72,23 @@ ddose <- 0:701
 plot(c(0, 701), c(-.02, 1), pch = 19, col = 'white', ann = FALSE, bty = 'u')
 lines(ddose, 1 - exp(- coef(summary(low_LET_model, correlation = TRUE))[1] * ddose), lwd = 2)# next is alpha particle data
 
-errbar(ion_data[6:13, "dose"], ion_data[6:13, "Prev"], 
-       yplus  = ion_data[6:13, "Prev"] +  ion_data[6:13, "SD"],
-       yminus = ion_data[6:13, "Prev"] -  ion_data[6:13, "SD"],
+errbar(ion_data[ion_data$Beam == "He", ][, "dose"], ion_data[ion_data$Beam == "He", ][, "Prev"], 
+       yplus  = ion_data[ion_data$Beam == "He", ][, "Prev"] + ion_data[ion_data$Beam == "He", ][, "SD"],
+       yminus = ion_data[ion_data$Beam == "He", ][, "Prev"] - ion_data[ion_data$Beam == "He", ][, "SD"],
+       # EGH to RKS: Delete these comments after checking for correctness. New plot output is identical to old plot.
+       # ion_data[6:13, "dose"] retrieved dose values for all He beams, is equivalent to ion_data[ion_data$Beam == "He", ][, "dose"]
+       # ion_data[6:13, "Prev"]  is equivalent to ion_data[ion_data$Beam == "He", ][, "Prev"]
+       # ion_data[6:13, "SD"]  is equivalent to ion_data[ion_data$Beam == "He", ][, "SD"]
        pch = 19, cap = 0.02, add = TRUE, col = 'red', errbar.col = 'red', lwd = 2) # Alpha particle data
-errbar(ion_data[1:5, "dose"], ion_data[1:5, "Prev"],
-       yplus  = ion_data[1:5, "Prev"] +  ion_data[1:5, "SD"], 
-       yminus = ion_data[1:5, "Prev"] -  ion_data[1:5, "SD"], 
+
+errbar(ion_data[ion_data$Beam == "p", ][, "dose"], ion_data[ion_data$Beam == "p", ][, "Prev"],
+       yplus  = ion_data[ion_data$Beam == "p", ][, "Prev"] + ion_data[ion_data$Beam == "p", ][, "SD"], 
+       yminus = ion_data[ion_data$Beam == "p", ][, "Prev"] - ion_data[ion_data$Beam == "p", ][, "SD"], 
+       # EGH to RKS: Delete these comments after checking for correctness. New plot output is identical to old plot.
+       # ion_data[1:5, ] references all the proton data. Hence,
+       # ion_data[1:5, "dose"] equals ion_data[ion_data$Beam == "p", ][, "dose"]
+       # ion_data[1:5, "Prev"] equals ion_data[ion_data$Beam == "p", ][, "Prev"]
+       # ion_data[1:5, "SD"] equals ion_data[ion_data$Beam == "p", ][, "SD"]
        pch = 19, cap = 0.02, add = TRUE, col = 'black', errbar.col = 'black', lwd = 2) # Proton data
 legend(x = "bottomright", legend = "95%CI not SD", cex=0.6)
 # pch = c(19,19), cex = 1, inset = 0.025)
@@ -88,7 +98,6 @@ dvchk <- 0.2*0:200
 plot(c(-.01, 40), c(-.02, .4), pch = 19, col = 'white', ann = FALSE, bty = 'u')
 LET = 193
 lines(dvchk, Y_0 + calibrated_HZE_nte_der(dvchk, LET))
-#lines(dvchk, Y_0 + calibrated_HZE_nte4_der(dvchk, LET), col = 'red')
 lines(dvchk, Y_0 + calibrated_HZE_te_der(dvchk, LET), col= 'purple')
 # mdf %>% filter(Z < 3 & d>0) # shows .R grammar for subsetting data base
 visual_data <- ion_data %>% filter (LET == 193) # needs number 193 not name??
@@ -98,7 +107,8 @@ errbar(visual_data[, "dose"], visual_data[, "Prev"],
        cap = 0.02, add = TRUE, col = 'blue', errbar.col = 'blue', lwd = 2)
 legend(x = "topleft", legend = "LET = 193",cex=0.6) 
 #============= This plot runs. Looking at the low doses suggests that perhaps if we
-# confined attention to data for doses in the interval (0, 40] cGy nte4 would do much better. # Also, because the line defining visual_data uses filter which only accepts a numerical
+# confined attention to data for doses in the interval (0, 40] cGy nte4 would do much better. 
+# Also, because the line defining visual_data uses filter which only accepts a numerical
 # entry for LET I don't see how to get corresponding plots for all subdata sets of interest
 # without a huge hassle. For both these reasons this plot chunk needs work. ============#
 
