@@ -3,7 +3,7 @@
 #               under the terms of the GNU General Public License v3.
 # Filename:     plots.R 
 # Purpose:      Concerns radiogenic mouse Harderian gland tumorigenesis. 
-#               Contains code to generate many of the REBP paper figures. It is
+#               Contains code to generate many of the IJMS paper figures. It is
 #               part of the source code for the NASAmouseHG project.
 # Contact:      Rainer K. Sachs 
 # Website:      https://github.com/sachsURAP/NASAmouseHG
@@ -15,17 +15,112 @@ source("ox_monteCarlo.R") # Load Monte Carlo.
 
 library(Hmisc) # Error bars.
 
-#==============================================================================#
-#==== Fig. 1. SEA Synergy Theory is Unreliable for Quadratic Component DERs ===#
-#==============================================================================#
-d1 <- 0.01 * 0:100
-d <- 0.5 * d1
-E1 <- d1 ^ 2
-E2 <- 2 * d1 ^ 2
-SEA <- d ^ 2 + 2 * d ^ 2
-plot(d1, E2, type = 'l', lwd = 3, bty = 'l', ann = FALSE)
-lines(d1, E1, lwd = 3)
-lines(d1, SEA, lwd = 3, lty = 2)
+# ======================================================================== #
+#=== Fig0. Fe 1-ion der "mixture" & observed data points + error bars ===# 
+#=========================================================================#
+# Declare ratios and LET values for plot
+ratios <- 1 # for Fe 
+LET_vals <- 193
+dd0 <- c(0.01 * 0:9, 0.1 * 1:9, 1:81)
+# We use the plot that neglects adjustable parameter correlations
+uncorr_fig_0 <- simulate_monte_carlo(n = 500, dd0, LET_vals, ratios, model = "NTE",vcov=FALSE)
+ci_data <- data.frame(dose = dd0,
+                      # Monte Carlo values
+                     uncorrBottom = uncorr_fig_0$monte_carlo[1, ],
+                      uncorrTop = uncorr_fig_0$monte_carlo[2, ], #
+                      
+                      # one-ion DERs for comparison
+                      fe_six = calibrated_HZE_nte_der(dose = dd0, L = 193),
+                      p = calibrated_low_LET_der(dose = dd0, L = .4),
+                      
+                      # IEA baseline mixture DER I(d), denoted by id below
+                      i = calculate_id(dd0, LET_vals, ratios, model = "NTE")[, 2])
+
+plot(c(0, 81), c(0, .62), col = "white", bty = 'L', ann = FALSE) # Set plot area
+polygon(x = c(dd0, rev(dd0)), y = c(ci_data[, "uncorrTop"], rev(ci_data[, "uncorrBottom"])),
+        xpd = -1, col = "aquamarine2", lwd = .4, border = "aquamarine2") # CI ribbon
+
+ratios <- 1 # for Fe; repeat above but with correlated plots 
+LET_vals <- 193
+# We use the plot that takes adjustable parameter correlations into account
+corr_fig_0 <- simulate_monte_carlo(n = 500, dd0, LET_vals, ratios, model = "NTE")
+ci_data <- data.frame(dose = dd0,
+                      # Monte Carlo values
+                      corrBottom = corr_fig_0$monte_carlo[1, ],
+                      corrTop = corr_fig_0$monte_carlo[2, ], #
+                      
+                      # one-ion DERs for comparison
+                      fe_six = calibrated_HZE_nte_der(dose = dd0, L = 193),
+                      p = calibrated_low_LET_der(dose = dd0, L = .4),
+                      
+                      # IEA baseline mixture DER I(d), denoted by id below
+                      i = calculate_id(dd0, LET_vals, ratios, model = "NTE")[, 2])
+
+polygon(x = c(dd0, rev(dd0)), y = c(ci_data[, "corrTop"], rev(ci_data[, "corrBottom"])),
+        xpd = -1, col = "yellow", lwd = .4, border = "orange") # CI ribbon
+lines(dd0, calibrated_HZE_nte_der(dose = dd0, L = 193), col = 'red', lwd=2)
+
+observed=select(filter(Fe_600, dose < 90), c(dose,Prev, SD))
+errbar(observed[["dose"]],observed[["Prev"]], yplus  = observed[["Prev"]] +  observed[["SD"]],
+       yminus = observed[["Prev"]] -observed[["SD"]],
+       pch = 20, cap = 0.03, add = TRUE, col = 'black', errbar.col = 'black', lwd = 1)
+
+
+legend(x = "topleft", legend = "Fe600", cex=0.51)
+
+# ======================================================================== #
+#=== Fig1_new. p-Fe mixture & observed  mixture point + error bars ===# 
+#== Shows observed synergy. Acts as template for IJMS paper plots. ==#
+#=========================================================================#
+# Declare ratios and LET values for plot
+ratios <- c(.3/7, 4/7) # for Fe-p 
+LET_vals <- c(193, .4)
+d1_new <- c(0.01 * 0:9, 0.1 * 1:9, 1:70)
+d1_Fe = c(0.01 * 0:9, 0.1 * 1:9, 1:30)
+d1_p <- c(0.01 * 0:9, 0.1 * 1:9, 1:40)
+# We use the plot that takes adjustable parameter correlations into account
+corr_fig_1 <- simulate_monte_carlo(n = 500, d1_new, LET_vals, ratios, model = "NTE")
+# The first argument, n, is the number of Monte Carlo repeats. Increase for
+# greater accuracy. Decrease to speed up the program.
+ci_data <- data.frame(dose = d1_new,
+                      # Monte Carlo values
+                      corrBottom = corr_fig_1$monte_carlo[1, ],
+                      corrTop = corr_fig_1$monte_carlo[2, ], #
+                      
+                      # one-ion DERs for comparison
+                      fe_six = calibrated_HZE_nte_der(dose = d1_new, L = 193),
+                      p = calibrated_low_LET_der(dose = d1_new, L = .4),
+                      
+                      # IEA baseline mixture DER I(d), denoted by id below
+                      i = calculate_id(d1_new, LET_vals, ratios, model = "NTE")[, 2])
+
+plot(c(0, 71), c(0, .55), col = "white", bty = 'L', ann = FALSE) # Set plot area
+polygon(x = c(d1_new, rev(d1_new)), y = c(ci_data[, "corrTop"], rev(ci_data[, "corrBottom"])),
+        xpd = -1, col = "yellow", lwd = .4, border = "orange") # Narrow CI ribbon
+fe_six_one = calibrated_HZE_nte_der(dose = d1_Fe, L = 193)
+p_one = calibrated_low_LET_der(dose = d1_p, L = .4)
+lines(d1_p, p_one, col = 'brown', lwd = 2) # p DER
+lines(d1_Fe, fe_six_one, col = 'blue') # Fe
+lines(ci_data[, "dose"], ci_data[, "i"], col = 'red', lwd = 3) # I(d)
+
+observed=select(filter(mix_data, Beam == "p.Fe600"), c(dose,Prev, SD))
+errbar(70,observed[["Prev"]], yplus  = observed[["Prev"]] +  observed[["SD"]],
+       yminus = observed[["Prev"]] -observed[["SD"]],
+       pch = 19, cap = 0.05, add = TRUE, col = 'black', errbar.col = 'black', lwd = 2)
+
+
+legend(x = "topleft", legend = "not 95%CI, SD", cex=0.3)
+# #==============================================================================#
+# # ======= Fig. 1REBP. SEA Synergy Theory. Not needed for IJMS paper ===========#
+# #==============================================================================#
+# d1 <- 0.01 * 0:100
+# d <- 0.5 * d1
+# E1 <- d1 ^ 2
+# E2 <- 2 * d1 ^ 2
+# SEA <- d ^ 2 + 2 * d ^ 2
+# plot(d1, E2, type = 'l', lwd = 3, bty = 'l', ann = FALSE)
+# lines(d1, E1, lwd = 3)
+# lines(d1, SEA, lwd = 3, lty = 2)
 
 #==============================================================================#
 #==================== Fig. 2. Convex, Concave, Standard =======================#
@@ -250,18 +345,15 @@ observed=select(filter(mix_data, Beam == "Si.Fe600"), c(dose,Prev, SD))
 errbar(40,.325, yplus  = .325 +  observed[["SD"]],
          yminus = .325 -observed[["SD"]],
          pch = 19, cap = 0.02, add = TRUE, col = 'black', errbar.col = 'black', lwd = 2)
-# errbar ( 2*observed["dose"], observed["Prev"], yplus  = observed["Prev"] +  observed["SD"],
-#        yminus = observed["Prev"] - observed["SD"],
-#        pch = 19, cap = 0.02, add = TRUE, col = 'black', errbar.col = 'black', lwd = 2) 
-#doesn't work: observed["dose"] and observed[1] aren't just reals
+# fix above so called by name; see Fig. 1 new
 
 legend(x = "bottomright", legend = "95%CI not SD", cex=0.6)
 # pch = c(19,19), cex = 1, inset = 0.025)
 #=============================================================#
-#=== Fig. 7A. 80% LowLET and 4 HZE Ions CI included=============#
+#== UNDER CONSTRUCTION Fig. 7A. 80% LowLET and 4 HZE Ions ribbon=====#
 #=============================================================#
-ratios=c(80,10,2.5,2.5,5); LET_vals=c(.4,17,70,100,193); d7A <- c(0.01*0:9, 0.1*1:9, 1:60)
-corr_fig_7A = simulate_monte_carlo(n=10,d7A,LET_vals,ratios,model="NTE")
+ratios=.01*c(10,2.5,2.5,5,80); LET_vals=c(17,70,100,193, 0.4); d7A <- c(0.01*0:9, 0.1*1:9, 1:60)#wrong order for low LET?
+corr_fig_7A = simulate_monte_carlo(n=500,d7A,LET_vals,ratios,model="NTE")
 ci_data = data.frame(dose=d7A,corrBottom=corr_fig_7A$monte_carlo[1, ],
                      corrTop=corr_fig_7A$monte_carlo[2, ],
                      H=calibrated_low_LET_der(dose=d7A,L=.4),
