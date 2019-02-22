@@ -44,6 +44,9 @@ library(mvtnorm) # Random sampling.
 simulate_monte_carlo <- function(n = 200, dose, LET, ratios, model = "NTE", 
                                  vcov = TRUE, interval_length = 0.95,
                                  seed = 100) {
+  if (sum(ratios) != 1) {
+    stop("Sum of ratios do not add up to one.")
+  }
   # Set the pseudorandom seed
   set.seed(seed)
   # Generate N randomly generated samples of parameters of HZE model.
