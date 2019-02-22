@@ -18,32 +18,32 @@ library(Hmisc) # Error bars.
 # ======================================================================== #
 #=== Fig0. Fe 1-ion der "mixture" & observed data points + error bars ===# 
 #=========================================================================#
-# Declare ratios and LET values for plot
-ratios <- 1 # for Fe 
-LET_vals <- 193
+# Declare ratios and LET values for plot; Fe with LET 193 only
 dd0 <- c(0.01 * 0:9, 0.1 * 1:9, 1:81)
+
 # We use the plot that neglects adjustable parameter correlations
-uncorr_fig_0 <- simulate_monte_carlo(n = 500, dd0, LET_vals, ratios, model = "NTE",vcov=FALSE)
+uncorr_fig_0 <- simulate_monte_carlo(n = 500, dd0, 193, 1, vcov = FALSE)
+
 ci_data <- data.frame(dose = dd0,
                       # Monte Carlo values
-                     uncorrBottom = uncorr_fig_0$monte_carlo[1, ],
-                      uncorrTop = uncorr_fig_0$monte_carlo[2, ], #
+                      uncorrBottom = uncorr_fig_0$monte_carlo[1, ],
+                      uncorrTop = uncorr_fig_0$monte_carlo[2, ], 
                       
                       # one-ion DERs for comparison
                       fe_six = calibrated_HZE_nte_der(dose = dd0, L = 193),
-                      p = calibrated_low_LET_der(dose = dd0, L = .4),
+                      # p = calibrated_low_LET_der(dose = dd0, L = .4),
                       
                       # IEA baseline mixture DER I(d), denoted by id below
-                      i = calculate_id(dd0, LET_vals, ratios, model = "NTE")[, 2])
+                      i = calculate_id(dd0, 193, 1, model = "NTE")[, 2])
 
 plot(c(0, 81), c(0, .62), col = "white", bty = 'L', ann = FALSE) # Set plot area
-polygon(x = c(dd0, rev(dd0)), y = c(ci_data[, "uncorrTop"], rev(ci_data[, "uncorrBottom"])),
-        xpd = -1, col = "aquamarine2", lwd = .4, border = "aquamarine2") # CI ribbon
 
-ratios <- 1 # for Fe; repeat above but with correlated plots 
-LET_vals <- 193
+polygon(x = c(dd0, rev(dd0)), 
+        y = c(ci_data[, "uncorrTop"], rev(ci_data[, "uncorrBottom"])), 
+        col = "aquamarine2", lwd = .4, border = "aquamarine2") # CI ribbon
+
 # We use the plot that takes adjustable parameter correlations into account
-corr_fig_0 <- simulate_monte_carlo(n = 500, dd0, LET_vals, ratios, model = "NTE")
+corr_fig_0 <- simulate_monte_carlo(n = 500, dd0, 193, 1)
 ci_data <- data.frame(dose = dd0,
                       # Monte Carlo values
                       corrBottom = corr_fig_0$monte_carlo[1, ],
@@ -51,20 +51,22 @@ ci_data <- data.frame(dose = dd0,
                       
                       # one-ion DERs for comparison
                       fe_six = calibrated_HZE_nte_der(dose = dd0, L = 193),
-                      p = calibrated_low_LET_der(dose = dd0, L = .4),
+                      # p = calibrated_low_LET_der(dose = dd0, L = .4),
                       
                       # IEA baseline mixture DER I(d), denoted by id below
-                      i = calculate_id(dd0, LET_vals, ratios, model = "NTE")[, 2])
+                      i = calculate_id(dd0, 193, 1, model = "NTE")[, 2])
 
-polygon(x = c(dd0, rev(dd0)), y = c(ci_data[, "corrTop"], rev(ci_data[, "corrBottom"])),
-        xpd = -1, col = "yellow", lwd = .4, border = "orange") # CI ribbon
-lines(dd0, calibrated_HZE_nte_der(dose = dd0, L = 193), col = 'red', lwd=2)
+polygon(x = c(dd0, rev(dd0)), 
+        y = c(ci_data[, "corrTop"], rev(ci_data[, "corrBottom"])),
+        col = "yellow", lwd = .4, border = "orange") # CI ribbon
+lines(dd0, calibrated_HZE_nte_der(dose = dd0, L = 193), col = 'red', lwd = 2)
 
-observed=select(filter(Fe_600, dose < 90), c(dose,Prev, SD))
-errbar(observed[["dose"]],observed[["Prev"]], yplus  = observed[["Prev"]] +  observed[["SD"]],
-       yminus = observed[["Prev"]] -observed[["SD"]],
+observed <- select(filter(Fe_600, dose < 90), c(dose, Prev, SD))
+
+errbar(observed[["dose"]], observed[["Prev"]], 
+       yplus = observed[["Prev"]] + observed[["SD"]],
+       yminus = observed[["Prev"]] - observed[["SD"]],
        pch = 20, cap = 0.03, add = TRUE, col = 'black', errbar.col = 'black', lwd = 1)
-
 
 legend(x = "topleft", legend = "Fe600", cex=0.51)
 
@@ -170,20 +172,11 @@ lines(ddose, 1 - exp(- coef(summary(low_LET_model, correlation = TRUE))[1] * ddo
 errbar(ion_data[ion_data$Beam == "He", ][, "dose"], ion_data[ion_data$Beam == "He", ][, "Prev"], 
        yplus  = ion_data[ion_data$Beam == "He", ][, "Prev"] + ion_data[ion_data$Beam == "He", ][, "SD"],
        yminus = ion_data[ion_data$Beam == "He", ][, "Prev"] - ion_data[ion_data$Beam == "He", ][, "SD"],
-       # EGH to RKS: Delete these comments after checking for correctness. New plot output is identical to old plot.
-       # ion_data[6:13, "dose"] retrieved dose values for all He beams, is equivalent to ion_data[ion_data$Beam == "He", ][, "dose"]
-       # ion_data[6:13, "Prev"]  is equivalent to ion_data[ion_data$Beam == "He", ][, "Prev"]
-       # ion_data[6:13, "SD"]  is equivalent to ion_data[ion_data$Beam == "He", ][, "SD"]
        pch = 19, cap = 0.02, add = TRUE, col = 'red', errbar.col = 'red', lwd = 2) # Alpha particle data
 
 errbar(ion_data[ion_data$Beam == "p", ][, "dose"], ion_data[ion_data$Beam == "p", ][, "Prev"],
        yplus  = ion_data[ion_data$Beam == "p", ][, "Prev"] + ion_data[ion_data$Beam == "p", ][, "SD"], 
        yminus = ion_data[ion_data$Beam == "p", ][, "Prev"] - ion_data[ion_data$Beam == "p", ][, "SD"], 
-       # EGH to RKS: Delete these comments after checking for correctness. New plot output is identical to old plot.
-       # ion_data[1:5, ] references all the proton data. Hence,
-       # ion_data[1:5, "dose"] equals ion_data[ion_data$Beam == "p", ][, "dose"]
-       # ion_data[1:5, "Prev"] equals ion_data[ion_data$Beam == "p", ][, "Prev"]
-       # ion_data[1:5, "SD"] equals ion_data[ion_data$Beam == "p", ][, "SD"]
        pch = 19, cap = 0.02, add = TRUE, col = 'black', errbar.col = 'black', lwd = 2) # Proton data
 legend(x = "bottomright", legend = "95%CI not SD", cex=0.6)
 # pch = c(19,19), cex = 1, inset = 0.025)
@@ -352,18 +345,21 @@ legend(x = "bottomright", legend = "95%CI not SD", cex=0.6)
 #=============================================================#
 #== UNDER CONSTRUCTION Fig. 7A. 80% LowLET and 4 HZE Ions ribbon=====#
 #=============================================================#
-ratios=.01*c(10,2.5,2.5,5,80); LET_vals=c(17,70,100,193, 0.4); d7A <- c(0.01*0:9, 0.1*1:9, 1:60)#wrong order for low LET?
-corr_fig_7A = simulate_monte_carlo(n=500,d7A,LET_vals,ratios,model="NTE")
-ci_data = data.frame(dose=d7A,corrBottom=corr_fig_7A$monte_carlo[1, ],
-                     corrTop=corr_fig_7A$monte_carlo[2, ],
-                     H=calibrated_low_LET_der(dose=d7A,L=.4),
-                     O=calibrated_HZE_nte_der(dose=d7A,L=17),
-                     Si=calibrated_HZE_nte_der(dose=d7A,L=70),
-                     Ti=calibrated_HZE_nte_der(dose=d7A,L=100),
-                     Fe=calibrated_HZE_nte_der(dose=d7A,L=193),
-                     i = calculate_id(d7A,LET_vals, ratios,model = "NTE")[,2])
+ratios <- .01 *c(10, 2.5, 2.5, 5, 80)
+LET_vals <- c(17, 70, 100, 193, 0.4) 
+d7A <- c(0.01 * 0:9, 0.1 * 1:9, 1:60) # wrong order for low LET?
+corr_fig_7A <- simulate_monte_carlo(n = 500, d7A, LET_vals, ratios, model="NTE")
+ci_data <- data.frame(dose = d7A, 
+                      corrBottom = corr_fig_7A$monte_carlo[1, ],
+                      corrTop = corr_fig_7A$monte_carlo[2, ],
+                      H = calibrated_low_LET_der(dose = d7A, L = .4),
+                      O = calibrated_HZE_nte_der(dose = d7A, L = 17),
+                      Si = calibrated_HZE_nte_der(dose = d7A, L = 70),
+                      Ti = calibrated_HZE_nte_der(dose = d7A, L = 100),
+                      Fe = calibrated_HZE_nte_der(dose = d7A, L = 193),
+                      i = calculate_id(d7A,LET_vals, ratios, model = "NTE")[,2])
                      
-plot(c(0,60),c(0,1), col = "white", ann= FALSE)
+plot(c(0,60),c(0,1), col = "white", ann = FALSE)
 polygon(x = c(d7A, rev(d7A)), y = c(ci_data[, "corrTop"], rev(ci_data[, "corrBottom"])),
         xpd = -1, col = "aquamarine2", lwd = .5, border = "aquamarine2") # CI
 lines(ci_data[,"dose"], ci_data[, "Fe"],
