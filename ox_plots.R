@@ -75,7 +75,7 @@ legend(x = "topleft", legend = "Fe600", cex=0.51)
 #== Shows observed synergy. Acts as template for IJMS paper plots. ==#
 #=========================================================================#
 # Declare ratios and LET values for plot
-ratios <- c(.3/7, 4/7) # for Fe-p 
+ratios <- c(3/7, 4/7) # for Fe-p 
 LET_vals <- c(193, .4)
 d1_new <- c(0.01 * 0:9, 0.1 * 1:9, 1:70)
 d1_Fe = c(0.01 * 0:9, 0.1 * 1:9, 1:30)
@@ -345,7 +345,7 @@ legend(x = "bottomright", legend = "95%CI not SD", cex=0.6)
 #=============================================================#
 #== UNDER CONSTRUCTION Fig. 7A. 80% LowLET and 4 HZE Ions ribbon=====#
 #=============================================================#
-ratios <- .01 *c(10, 2.5, 2.5, 5, 80)
+ratios <- .01 * c(10, 2.5, 2.5, 5, 80) 
 LET_vals <- c(17, 70, 100, 193, 0.4) 
 d7A <- c(0.01 * 0:9, 0.1 * 1:9, 1:60) # wrong order for low LET?
 corr_fig_7A <- simulate_monte_carlo(n = 500, d7A, LET_vals, ratios, model="NTE")
