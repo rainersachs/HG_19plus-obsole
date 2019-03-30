@@ -53,10 +53,8 @@ rm(list=ls())
 # include gamma-ray data. Includes LET=100 keV/micron for Ti, an ad-hoc compromise
 # between lower value at beam entry and higher value at mouse cage.
 
-# ion_data <- data.frame(read.csv("ox_1-ion_data.csv")) 
-ion_data <- data.frame(read.csv("1-ion_csv.csv")) # EGH trying new data from Chang & Blakely
-# mix_data =  data.frame(read.csv("ox_mix_data.csv"))
-mix_data <- data.frame(read.csv("new_ox_mix_data.csv")) # EGH trying new data from Chang & Blakely
+ion_data <- data.frame(read.csv("one-ion.csv")) 
+mix_data <- data.frame(read.csv("mix_ion.csv")) 
 # The two .csv files contain all input HG data. Changes in the data set such as additions, corrections, or deletions should be made only in the .csv files. Such changes will then be implemented automatically by the scripts everywhere else.
 
 # The following, which shows how to compute ion speed and the Katz amorphous track structure parameter,

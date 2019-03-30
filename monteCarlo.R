@@ -12,7 +12,7 @@
 # Details:      See dataAndInfo.R for further licensing, attribution, 
 #               references, and abbreviation information.
 
-source("ox_synergy.R") # Load in data and models.
+source("synergy.R") # Load in data and models.
 
 library(mvtnorm) # Random sampling.
 

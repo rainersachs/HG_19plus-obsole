@@ -12,7 +12,7 @@
 # Details:      See dataAndInfo.R for further licensing, attribution,
 #               references, and abbreviation information.
 
-source("ox_data_info.R") # Load in the data. Remark: dose is in units of cGy; 
+source("data_info.R") # Load in the data. Remark: dose is in units of cGy; 
 # LET usually in keV/micron; prevalence Prev always < 1
 # (i.e. not in %, which would mean prevalence < 100 but is strongly deprecated).
 
