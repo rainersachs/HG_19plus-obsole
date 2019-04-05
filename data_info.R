@@ -1,14 +1,16 @@
-# all 6 core files (2 .csv and 4 .R double checked and functional 1/14/2019)
-# Copyright:    (C) 2017-2019 Sachs Undergraduate Research Apprentice Program (URAP) class  at UCB
+# Copyright:    (C) 2017-2019 Sachs Undergraduate Research Apprentice Program 
+#               (URAP) class at University of California, Berkeley.
 #               This program and its accompanying materials are distributed 
-#               under the terms of the GNU General Public License v3. As detailed in that
-#               license no warranty, explicit or implied, comes with this suite of R scripts
-# Filename:     dataAndInfo.R 
+#               under the terms of the GNU General Public License v3. As 
+#               detailed in that license no warranty, explicit or implied, 
+#               comes with this suite of R scripts.
+# Filename:     data_info.R 
 # Purpose:      Concerns radiogenic mouse Harderian gland (HG) tumorigenesis. Loads 
 #               ion and tumor prevalence data from CSV files. It is part of the 
-#               customized source code for the NASAmouseHG project.
+#               customized source code for the Chang 2019 HG project.
 # Contact:      Rainer K. Sachs 
 # Website:      https://github.com/rainersachs/mouseHG_Chang_2019plus
+# Mod history:  04 Apr 2019
 # Attribution:  This R script was developed at UC Berkeley. Written by Dae Woong 
 #               Ham Summer 2017. Additions, corrections, changes, quality 
 #               control, reorganization by Edward Huang, Yimin Lin, Mark Ebert,
@@ -55,7 +57,10 @@ rm(list=ls())
 
 ion_data <- data.frame(read.csv("one_ion.csv")) 
 mix_data <- data.frame(read.csv("mix_ion.csv")) 
-# The two .csv files contain all input HG data. Changes in the data set such as additions, corrections, or deletions should be made only in the .csv files. Such changes will then be implemented automatically by the scripts everywhere else.
+# The two .csv files contain all input HG data. Changes in the data set such 
+# as additions, corrections, or deletions should be made only in the .csv files.
+# Such changes will then be implemented automatically by the scripts 
+# everywhere else.
 
 # The following, which shows how to compute ion speed and the Katz amorphous track structure parameter,
 # may be used for adding Cucinotta's models in 16 Chang to our scripts and comparing them to our more parsimonious models.

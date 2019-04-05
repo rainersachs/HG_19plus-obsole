@@ -5,11 +5,11 @@
 # Purpose:      Concerns radiogenic mouse Harderian gland tumorigenesis. 
 #               Contains the code to run Monte Carlo sampling and generate 
 #               confidence intervals for dose-effect relationship models. It is 
-#               part of the source code for the NASAmouseHG project.
+#               part of the source code for the Chang 2019 HG project.
 # Contact:      Rainer K. Sachs 
-# Website:      https://github.com/sachsURAP/NASAmouseHG
-# Mod history:  18 Jun 2018
-# Details:      See dataAndInfo.R for further licensing, attribution, 
+# Website:      https://github.com/rainersachs/mouseHG_Chang_2019plus
+# Mod history:  04 Apr 2019
+# Details:      See data_info.R for further licensing, attribution, 
 #               references, and abbreviation information.
 
 source("synergy.R") # Load in data and models.

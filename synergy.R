@@ -1,15 +1,15 @@
 # Copyright:    (C) 2017-2018 Sachs Undergraduate Research Apprentice Program
 #               This program and its accompanying materials are distributed 
 #               under the terms of the GNU General Public License v3.
-# Filename:     synergyTheory.R 
+# Filename:     synergy.R 
 # Purpose:      Concerns radiogenic mouse Harderian gland tumorigenesis. 
 #               Contains relevant synergy theory models, information coefficient
 #               calculations and useful objects. It is part of the 
-#               source code for the NASAmouseHG project.
+#               source code for the Chang 2019 HG project.
 # Contact:      Rainer K. Sachs 
-# Website:      https://github.com/sachsURAP/NASAmouseHG
-# Mod history:  1 Jan 2019
-# Details:      See dataAndInfo.R for further licensing, attribution,
+# Website:      https://github.com/rainersachs/mouseHG_Chang_2019plus
+# Mod history:  04 Apr 2019
+# Details:      See data_info.R for further licensing, attribution,
 #               references, and abbreviation information.
 
 source("data_info.R") # Load in the data. Remark: dose is in units of cGy; 
@@ -17,10 +17,16 @@ source("data_info.R") # Load in the data. Remark: dose is in units of cGy;
 # (i.e. not in %, which would mean prevalence < 100 but is strongly deprecated).
 
 library(deSolve) # Solving differential equations.
-library(minpack.lm) # package for non-linear regression #rks to laz: I think we probably can just use nls() in stats, not nlsLM from linpack. Please check in R documentation if there is any functional difference at all
-library(mvtnorm) # package for calculating confidence intervals by Monte Carlo simulation based on variance-covariance matrices #rks to laz: I added to comment.Please check that my addition is OK.
-library(Hmisc) #plotting, e.g. ribbons
-library(dplyr) #helps manipulate data frames
+library(minpack.lm) # Package for non-linear regression 
+                    # rks to laz: I think we probably can just use  nls() in 
+                    # stats, not nlsLM from linpack. Please check in R 
+                    # documentation if there is any functional difference at all
+library(mvtnorm) # Package for calculating confidence intervals by Monte Carlo 
+                  # simulation based on variance-covariance matrices 
+                  # rks to laz: I added to comment. Please check that my 
+                  # addition is OK.
+library(Hmisc) # Plotting, e.g. ribbons
+library(dplyr) # Helps manipulate data frames
 
 #========================= MISC. OBJECTS & VARIABLES ==========================#
 # In next line phi controls how fast NTE build up from zero; not really needed 
@@ -30,29 +36,33 @@ library(dplyr) #helps manipulate data frames
 
 phi <- 2000 # even larger phi should give the same final results, 
             # but might cause extra problems with R. 
-Y_0 = 0.0275 #background HG prevalence, 0.0275 default, calculated separately from 0 dose NSRL 
+Y_0 <- 0.0275 #background HG prevalence, 0.0275 default, calculated separately from 0 dose NSRL 
 # data or (Cucinotta)  estimated from considering LBL and NSRL data as a whole 
 
 #================================ DER MODELS ==================================#
 
-#=============== subsets of 1-ion dataframe =================#
+#=============== Subsets of 1-ion dataframe =================#
 # (HZE = high charge and energy; 
-HZE_data <- select(filter(ion_data, Z > 3),1:length(ion_data[1,]))# Includes 1-ion data iff Z > 3
-low_LET_data = select(filter(ion_data, Z<4), 1:length(ion_data[1,]))  # Swift light ions: here protons and alpha particles.
+HZE_data <- select(filter(ion_data, Z > 3), 1:length(ion_data)) # Includes 1-ion data iff Z > 3
+low_LET_data <- select(filter(ion_data, Z < 4), 1:length(ion_data))  # Swift light ions: here protons and alpha particles.
 
 #=============== HZE/NTE MODEL =================#
 #  NTE = non-targeted effects are included (in addition to TE)
-HZE_nte_model <- nls(# Calibrate params in model modifying 17Cuc. hazard function NTE models
+HZE_nte_model <- nls( # Calibrate params in model modifying 17Cuc. hazard function NTE models
   Prev ~ Y_0 + (1 - exp ( - (aa1 * LET * dose * exp( - aa2 * LET) 
                                + (1 - exp( - phi * dose)) * kk1))), 
   data = HZE_data, weights = NWeight,
   start = list(aa1 = .00009, aa2 = .001, kk1 = .06))  
+
 summary(HZE_nte_model, correlation = TRUE) # Parameter values & accuracy.
+
 # If a paper uses dose in Gy care is needed in preceding and following lines to rescale from cGy.
 vcov(HZE_nte_model) # Variance-covariance matrix.
 HZE_nte_model_coef <- coef(HZE_nte_model) # Calibrated central values of the 3 parameters.
-aa1=HZE_nte_model_coef['aa1']; aa2=HZE_nte_model_coef['aa2']
-kk1=HZE_nte_model_coef['kk1']
+aa1 <- HZE_nte_model_coef['aa1']
+aa2 <- HZE_nte_model_coef['aa2']
+kk1 <- HZE_nte_model_coef['kk1']
+
 # The DER, = 0 at dose 0.
 calibrated_nte_hazard_func <- function(dose, LET, coef) { # Calibrated hazard function. 
  return(coef[1] * LET * dose * exp( - coef[2] * LET) 
@@ -113,58 +123,102 @@ info_crit_table <- cbind(AIC(HZE_te_model, HZE_nte_model),
 print(info_crit_table)
 
 ##=================== Cross validation ====================#
-#Seperate Data into 8 blocks, i.e. test/training sets:
-O_350 = select(filter(HZE_data,Beam=="O"),1:length(HZE_data[1,]))
-Ne_670 = select(filter(HZE_data,Beam=="Ne"),1:length(HZE_data[1,]))
-Si_260 = select(filter(HZE_data,Beam=="Si"),1:length(HZE_data[1,]))
-Ti_1000 = select(filter(HZE_data,Beam=="Ti"),1:length(HZE_data[1,]))
-Fe_600 = select(filter(HZE_data,LET==193),1:length(HZE_data[1,]))
-Fe_350 = select(filter(HZE_data,LET==253),1:length(HZE_data[1,]))
-Nb_600 = select(filter(HZE_data,Beam=="Nb"),1:length(HZE_data[1,]))
-La_593 = select(filter(HZE_data,Beam=="La"),1:length(HZE_data[1,]))
-set_list = list(O_350, Ne_670, Si_260, Ti_1000, Fe_600, Fe_350, Nb_600, La_593)
-actual_prev = HZE_data$Prev
+# Seperate Data into 8 blocks, i.e. test/training sets:
+data_len <- 1:length(HZE_data)
+O_350 <- select(filter(HZE_data, Beam == "O"), data_len)
+Ne_670 <- select(filter(HZE_data, Beam == "Ne"), data_len)
+Si_260 <- select(filter(HZE_data, Beam == "Si"), data_len)
+Ti_1000 <- select(filter(HZE_data, Beam == "Ti"), data_len)
+Fe_600 <- select(filter(HZE_data, LET == 193), data_len)
+Fe_350 <- select(filter(HZE_data, LET == 253), data_len)
+Nb_600 <- select(filter(HZE_data, Beam == "Nb"), data_len)
+La_593 <- select(filter(HZE_data, Beam == "La"), data_len)
+set_list <- list(O_350, Ne_670, Si_260, Ti_1000, 
+                 Fe_600, Fe_350, Nb_600, La_593)
+actual_prev <- HZE_data$Prev
 
-# # Cross Validation for NTE Model:
-theoretical = vector()
-for (i in 1:length(set_list)) {
-  test = set_list[[i]]
-  excluded_list = set_list[-i]
-  train = excluded_list[[1]]
-  for (j in 2:length(excluded_list)) {
-    train = rbind(train, excluded_list[[j]])
-  }
-  HZE_nte_model <- nls(Prev ~ Y_0 + (1 - exp ( - (aa1 * LET * dose * exp( - aa2 * LET) + (1 - exp( - phi * dose)) * kk1))),
-                       data = train,
-                       weights = NWeight,
-                       start = list(aa1 = .00009, aa2 = .001, kk1 = .06))
-  predic = predict(HZE_nte_model, test)
-  theoretical = c(theoretical, predic)
-}
-errors = (theoretical - actual_prev)^2
-NTE_cv = weighted.mean(errors, HZE_data$NWeight)
+#======= Cross Validation for NTE Model  ========#
+# theoretical <- vector()
+# for (i in 1:length(set_list)) {
+#   test <- set_list[[i]]
+#   excluded_list <- set_list[-i]
+#   train <- excluded_list[[1]]
+#   for (j in 2:length(excluded_list)) {
+#     train <- rbind(train, excluded_list[[j]])
+#   }
+#   HZE_nte_model <- nls(Prev ~ Y_0 + (1 - exp ( - (aa1 * LET * dose * exp( - aa2 * LET) + (1 - exp( - phi * dose)) * kk1))),
+#                        data = train,
+#                        weights = NWeight,
+#                        start = list(aa1 = .00009, aa2 = .001, kk1 = .06))
+#   predic <- predict(HZE_nte_model, test)
+#   theoretical <- c(theoretical, predic)
+# }
+# errors <- (theoretical - actual_prev)^2
+# NTE_cv <- weighted.mean(errors, HZE_data$NWeight)
 
 
 #======= Cross Validation for TE Model  ========#
-theoretical = vector()
-for (i in 1:8) {
-  test = set_list[[i]]
-  excluded_list = set_list[-i]
-  train = excluded_list[[1]]
-  for (j in 2:length(excluded_list)) {
-    train = rbind(train, excluded_list[[j]])
-  }
-  HZE_te_model <- nls(Prev ~ Y_0 + (1 - exp ( - (aate1 * LET * dose * exp( - aate2 * LET)))),
-                      data = train,
-                      weights = NWeight,
-                      start = list(aate1 = .00009, aate2 = .01))
-  predic = predict(HZE_te_model, test)
-  theoretical = c(theoretical, predic)
-}
-errors = (theoretical - actual_prev)^2
-TE_cv = weighted.mean(errors, HZE_data$NWeight)
+# theoretical <- vector()
+# for (i in 1:8) { # EGH: Why not use length(set_list)?
+#   test <- set_list[[i]]
+#   excluded_list <- set_list[-i]
+#   train <- excluded_list[[1]]
+#   for (j in 2:length(excluded_list)) {
+#     train <- rbind(train, excluded_list[[j]])
+#   }
+#   HZE_te_model <- nls(Prev ~ Y_0 + (1 - exp ( - (aate1 * LET * dose * exp( - aate2 * LET)))),
+#                       data = train,
+#                       weights = NWeight,
+#                       start = list(aate1 = .00009, aate2 = .01))
+#   predic <- predict(HZE_te_model, test)
+#   theoretical <- c(theoretical, predic)
+# }
+# errors <- (theoretical - actual_prev)^2
+# TE_cv <- weighted.mean(errors, HZE_data$NWeight)
 
-CV_table = cbind(NTE_cv, TE_cv)
+#' @description Applies Simple Effect Additivity to get a baseline mixture DER.
+#' 
+#' @param ions List of dataframes corresponding to ion.
+#' @param model String, either "NTE" for non-tageted effects or "TE" for 
+#'              targeted effects.
+#' @param prev Numeric vector of observed prevalence values.
+#' @param w Numeric vector of experimental weights.
+#' 
+#' @details Weight vector elements should correspond to dataframe element order.
+#'          i.e. w[n] = ions[length(ions[:, 1]) / n][length(ions[:, 1]) % n]
+#'          
+#' @return Numeric vector representing the estimated Harderian Gland 
+#'         prevalence from a SEA mixture DER constructed from the given DER 
+#'         parameters. 
+cross_val <- function(ions, model, prev, w) {
+  theoretical <- vector()
+  for (i in 1:length(ions)) {
+    test <- ions[[i]]
+    excluded_list <- ions[-i]
+    train <- excluded_list[[1]]
+    for (j in 2:length(excluded_list)) {
+      train <- rbind(train, excluded_list[[j]])
+    }
+    if (model == "NTE") {
+      f <- Prev ~ Y_0 + (1 - exp ( -(aa1 * LET * dose * exp( -aa2 * LET) 
+                      + (1 - exp( - phi * dose)) * kk1)))
+      s <- list(aa1 = .00009, aa2 = .001, kk1 = .06)
+    } else {
+      f <- Prev ~ Y_0 + (1 - exp ( -(aate1 * LET * dose * exp( -aate2 * LET))))
+      s <- list(aate1 = .00009, aate2 = .01)
+    }
+    m <- nls(f, data = train, weights = NWeight, start = s)
+    pred <- predict(m, test)
+    theoretical <- c(theoretical, pred)
+  }
+  errors <- (theoretical - prev) ^ 2
+  return(weighted.mean(errors, w))
+}
+
+NTE_cv <- cross_val(set_list,"NTE", HZE_data$Prev, HZE_data$NWeight)
+TE_cv <- cross_val(set_list, "TE", HZE_data$Prev, HZE_data$NWeight)
+
+CV_table <- cbind(NTE_cv, TE_cv)
 print(CV_table)
 #=========== BASELINE NO-SYNERGY/ANTAGONISM MIXTURE DER FUNCTIONS =============#
 

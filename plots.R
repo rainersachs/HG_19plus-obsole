@@ -4,11 +4,11 @@
 # Filename:     plots.R 
 # Purpose:      Concerns radiogenic mouse Harderian gland tumorigenesis. 
 #               Contains code to generate many of the IJMS paper figures. It is
-#               part of the source code for the NASAmouseHG project.
+#               part of the source code for the Chang 2019 HG project.
 # Contact:      Rainer K. Sachs 
-# Website:      https://github.com/sachsURAP/NASAmouseHG
-# Mod history:  26 July 2018
-# Details:      See dataAndInfo.R for further licensing, attribution, 
+# Website:      https://github.com/rainersachs/mouseHG_Chang_2019plus
+# Mod history:  04 Apr 2019
+# Details:      See data_info.R for further licensing, attribution, 
 #               references, and abbreviation information.
 
 source("monteCarlo.R") # Load Monte Carlo.
