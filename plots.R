@@ -468,3 +468,48 @@ lines(ci_data[, "dose"], ci_data[, "si"], col = 'blue', lwd = 1.5)
 lines(ci_data[, "dose"], ci_data[, "ti"], col = 'blue', lwd = 1.5)
 lines(ci_data[, "dose"], ci_data[, "fe_six"], col = 'blue', lwd = 1.5)
 lines(ci_data[, "dose"], ci_data[, "i"], col = 'red', lwd = 3)
+
+#==============================================================================#
+#======================= Fig. 3. Fe 600 MeV/u dual CI plot ====================#
+#==============================================================================#
+# EGH: Need to change double x-axis label to single.
+
+dose_40 <- 0:40
+dose_120 <- 0:120
+
+fig_3_ribbon_1 <- simulate_monte_carlo(n = 500, dose_40, LET = 193, ratios = 1, 
+                                       model = "NTE", vcov = FALSE)
+fig_3_ribbon_2 <- simulate_monte_carlo(n = 500, dose_120, LET = 193, ratios = 1, 
+                                       model = "NTE", vcov = FALSE)
+
+par(mfrow = c(1, 2)) # Split plot window.
+plot(dose_40, fig_3_ribbon_1$monte_carlo[2, ], type = "n", # Panel 1.
+     ylab = "Prevalence (%)",
+     xlab = "Dose (cGy)")
+
+ci_data <- data.frame(dose = dose_40,
+                      # Monte Carlo values
+                      uncorrBottom = fig_3_ribbon_1$monte_carlo[1, ],
+                      uncorrTop = fig_3_ribbon_1$monte_carlo[2, ])
+polygon(x = c(dose_40, rev(dose_40)), y = c(ci_data[, "uncorrTop"], 
+                                    rev(ci_data[, "uncorrBottom"])),
+        xpd = -1, col = "aquamarine2", lwd = .5, border = "aquamarine2")
+lines(dose_40, calibrated_HZE_nte_der(dose_40, 193), col = 'blue', lwd = 1.5)
+
+
+plot(dose_120, fig_3_ribbon_2$monte_carlo[2, ], type = "n", # Panel 2.
+     xlab = "Dose (cGy)",
+     ylab = "")
+
+ci_data <- data.frame(dose = dose_120,
+                      # Monte Carlo values
+                      uncorrBottom = fig_3_ribbon_2$monte_carlo[1, ],
+                      uncorrTop = fig_3_ribbon_2$monte_carlo[2, ])
+polygon(x = c(dose_120, rev(dose_120)), y = c(ci_data[, "uncorrTop"], 
+                                            rev(ci_data[, "uncorrBottom"])),
+        xpd = -1, col = "aquamarine2", lwd = .5, border = "aquamarine2")
+
+lines(dose_120, calibrated_HZE_nte_der(dose_120, 193), col = 'blue', lwd = 1.5)
+
+
+
