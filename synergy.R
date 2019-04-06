@@ -137,50 +137,10 @@ set_list <- list(O_350, Ne_670, Si_260, Ti_1000,
                  Fe_600, Fe_350, Nb_600, La_593)
 actual_prev <- HZE_data$Prev
 
-#======= Cross Validation for NTE Model  ========#
-# theoretical <- vector()
-# for (i in 1:length(set_list)) {
-#   test <- set_list[[i]]
-#   excluded_list <- set_list[-i]
-#   train <- excluded_list[[1]]
-#   for (j in 2:length(excluded_list)) {
-#     train <- rbind(train, excluded_list[[j]])
-#   }
-#   HZE_nte_model <- nls(Prev ~ Y_0 + (1 - exp ( - (aa1 * LET * dose * exp( - aa2 * LET) + (1 - exp( - phi * dose)) * kk1))),
-#                        data = train,
-#                        weights = NWeight,
-#                        start = list(aa1 = .00009, aa2 = .001, kk1 = .06))
-#   predic <- predict(HZE_nte_model, test)
-#   theoretical <- c(theoretical, predic)
-# }
-# errors <- (theoretical - actual_prev)^2
-# NTE_cv <- weighted.mean(errors, HZE_data$NWeight)
-
-
-#======= Cross Validation for TE Model  ========#
-# theoretical <- vector()
-# for (i in 1:8) { # EGH: Why not use length(set_list)?
-#   test <- set_list[[i]]
-#   excluded_list <- set_list[-i]
-#   train <- excluded_list[[1]]
-#   for (j in 2:length(excluded_list)) {
-#     train <- rbind(train, excluded_list[[j]])
-#   }
-#   HZE_te_model <- nls(Prev ~ Y_0 + (1 - exp ( - (aate1 * LET * dose * exp( - aate2 * LET)))),
-#                       data = train,
-#                       weights = NWeight,
-#                       start = list(aate1 = .00009, aate2 = .01))
-#   predic <- predict(HZE_te_model, test)
-#   theoretical <- c(theoretical, predic)
-# }
-# errors <- (theoretical - actual_prev)^2
-# TE_cv <- weighted.mean(errors, HZE_data$NWeight)
-
 #' @description Applies Simple Effect Additivity to get a baseline mixture DER.
 #' 
 #' @param ions List of dataframes corresponding to ion.
-#' @param model String, either "NTE" for non-tageted effects or "TE" for 
-#'              targeted effects.
+#' @param model String, "NTE" or "TE" for non-targeted or targeted effects.
 #' @param prev Numeric vector of observed prevalence values.
 #' @param w Numeric vector of experimental weights.
 #' 
@@ -190,6 +150,14 @@ actual_prev <- HZE_data$Prev
 #' @return Numeric vector representing the estimated Harderian Gland 
 #'         prevalence from a SEA mixture DER constructed from the given DER 
 #'         parameters. 
+#'
+#' @details Tested for the two examples below. General correctness is 
+#'          unverified and should be treated at some future data.
+#'
+#' @examples 
+#' NTE_cv <- cross_val(set_list,"NTE", HZE_data$Prev, HZE_data$NWeight)
+#' TE_cv <- cross_val(set_list, "TE", HZE_data$Prev, HZE_data$NWeight)
+
 cross_val <- function(ions, model, prev, w) {
   theoretical <- vector()
   for (i in 1:length(ions)) {
