@@ -1,4 +1,4 @@
-# Copyright:    (C) 2017-2018 Sachs Undergraduate Research Apprentice Program
+# Copyright:    (C) 2017-2019 Sachs Undergraduate Research Apprentice Program
 #               This program and its accompanying materials are distributed 
 #               under the terms of the GNU General Public License v3.
 # Filename:     synergy.R 
@@ -18,13 +18,8 @@ source("data_info.R") # Load in the data. Remark: dose is in units of cGy;
 
 library(deSolve) # Solving differential equations.
 library(minpack.lm) # Package for non-linear regression 
-                    # rks to laz: I think we probably can just use  nls() in 
-                    # stats, not nlsLM from linpack. Please check in R 
-                    # documentation if there is any functional difference at all
 library(mvtnorm) # Package for calculating confidence intervals by Monte Carlo 
-                  # simulation based on variance-covariance matrices 
-                  # rks to laz: I added to comment. Please check that my 
-                  # addition is OK.
+# simulation based on variance-covariance matrices 
 library(Hmisc) # Plotting, e.g. ribbons
 library(dplyr) # Helps manipulate data frames
 
@@ -34,10 +29,11 @@ library(dplyr) # Helps manipulate data frames
 # needed for later synergy calculations. 
 # d_0 = 1 / phi = 5 x 10-4 cGy = 5 x 10^-6 Gy.
 
+Y_0 <- 0.04604 # HG tumor prevalence for sham irradiated controls. 
+# Y_0 SD = 0.01 but this value is not used. 
+
 phi <- 2000 # even larger phi should give the same final results, 
-            # but might cause extra problems with R. 
-Y_0 <- 0.0275 #background HG prevalence, 0.0275 default, calculated separately from 0 dose NSRL 
-# data or (Cucinotta)  estimated from considering LBL and NSRL data as a whole 
+# but might cause extra problems with R. 
 
 #================================ DER MODELS ==================================#
 
@@ -48,9 +44,9 @@ low_LET_data <- select(filter(ion_data, Z < 4), 1:length(ion_data))  # Swift lig
 
 #=============== HZE/NTE MODEL =================#
 #  NTE = non-targeted effects are included (in addition to TE)
-HZE_nte_model <- nls( # Calibrate params in model modifying 17Cuc. hazard function NTE models
+HZE_nte_model <- nls(  # Calibrate params in model modifying 17Cuc. hazard function NTE models. RKS: Models include Y_0, DERs do not. 
   Prev ~ Y_0 + (1 - exp ( - (aa1 * LET * dose * exp( - aa2 * LET) 
-                               + (1 - exp( - phi * dose)) * kk1))), 
+                             + (1 - exp( - phi * dose)) * kk1))), 
   data = HZE_data, weights = NWeight,
   start = list(aa1 = .00009, aa2 = .001, kk1 = .06))  
 
@@ -65,8 +61,8 @@ kk1 <- HZE_nte_model_coef['kk1']
 
 # The DER, = 0 at dose 0.
 calibrated_nte_hazard_func <- function(dose, LET, coef) { # Calibrated hazard function. 
- return(coef[1] * LET * dose * exp( - coef[2] * LET) 
-        + (1 - exp( - phi * dose)) * coef[3])
+  return(coef[1] * LET * dose * exp( - coef[2] * LET) 
+         + (1 - exp( - phi * dose)) * coef[3])
 } 
 
 calibrated_HZE_nte_der <- function(dose, LET, coef = HZE_nte_model_coef) { # Calibrated HZE NTE DER.
@@ -125,7 +121,7 @@ print(info_crit_table)
 ##=================== Cross validation ====================#
 # Seperate Data into 8 blocks, i.e. test/training sets:
 data_len <- 1:length(HZE_data)
-O_350 <- select(filter(HZE_data, Beam == "O"), data_len)
+O_350 <- select(filter(HZE_data, Beam == "O"), data_len) #RKS added 3 oxygen points 5/17/2019)
 Ne_670 <- select(filter(HZE_data, Beam == "Ne"), data_len)
 Si_260 <- select(filter(HZE_data, Beam == "Si"), data_len)
 Ti_1000 <- select(filter(HZE_data, Beam == "Ti"), data_len)
@@ -137,7 +133,8 @@ set_list <- list(O_350, Ne_670, Si_260, Ti_1000,
                  Fe_600, Fe_350, Nb_600, La_593)
 actual_prev <- HZE_data$Prev
 
-#' @description Applies Simple Effect Additivity to get a baseline mixture DER.
+#' @description Applies cross validation to a mixture of ions with respect to 
+#'              a synergy theory.
 #' 
 #' @param ions List of dataframes corresponding to ion.
 #' @param model String, "NTE" or "TE" for non-targeted or targeted effects.
@@ -149,7 +146,7 @@ actual_prev <- HZE_data$Prev
 #'          
 #' @return Numeric vector representing the estimated Harderian Gland 
 #'         prevalence from a SEA mixture DER constructed from the given DER 
-#'         parameters. 
+#'         parameters. RKS 5/17/2019. Again: why SEA?
 #'
 #' @details Tested for the two examples below. General correctness is 
 #'          unverified and should be treated at some future data.
@@ -169,7 +166,7 @@ cross_val <- function(ions, model, prev, w) {
     }
     if (model == "NTE") {
       f <- Prev ~ Y_0 + (1 - exp ( -(aa1 * LET * dose * exp( -aa2 * LET) 
-                      + (1 - exp( - phi * dose)) * kk1)))
+                                     + (1 - exp( - phi * dose)) * kk1)))
       s <- list(aa1 = .00009, aa2 = .001, kk1 = .06)
     } else {
       f <- Prev ~ Y_0 + (1 - exp ( -(aate1 * LET * dose * exp( -aate2 * LET))))
@@ -209,7 +206,7 @@ print(CV_table)
 #'         
 #' @examples
 #' calculate_SEA(.01 * 0:40, c(70, 195), c(1/2, 1/2), n = 2)
-#' calculate_SEA(.01 * 0:70, c(0.4, 195), c(4/7, 3/7))
+#' calculate_SEA(.01 * 0:70, c(0.4, 195), c(4/7, 3/7)) # RKS please explain n=NULL and lowLET = false a bit more. Also, what happens if we add more models in the cross validation?
 
 calculate_SEA <- function(dose, LET, ratios, lowLET = FALSE, n = NULL) {
   if (!is.null(n) && (n != length(ratios) | n != length(LET))) {
@@ -220,7 +217,7 @@ calculate_SEA <- function(dose, LET, ratios, lowLET = FALSE, n = NULL) {
   total <- 0
   i <- 1
   if (lowLET == TRUE) { 
-    # First elements of ratios and LET should be the low-LET DER
+    # First elements of ratios and LET should be the low-LET DER. RKS is this still true, or is low LET now identified by LET, not location in a vector?
     total <- total + calibrated_low_LET_der(dose * ratios[i], LET[i])
     i <- i + 1
   } 
@@ -269,7 +266,7 @@ calculate_id <- function(dose, LET, ratios, model = "NTE",
                          phi = 2000) {
   dE <- function(yini, state, pars) { # Constructing an ODE from the DERS.
     with(as.list(c(state, pars)), {
-
+      
       # Screen out low LET values.
       lowLET_total <- lowLET_ratio <- 0
       remove <- c()
@@ -297,13 +294,13 @@ calculate_id <- function(dose, LET, ratios, model = "NTE",
         }
       }
       if (lowLET_ratio > 0) { 
-        # If low-LET DER is present then include it at the end of the dI vector.
+        # If low-LET DER is present then include it at the end of the dI vector. RKS: make it first as asked for above? last as asked for here? any location at all, which seems to work?
         u[length(LET) + 1] <- uniroot(function(dose) 
-                                      low_der(dose, LET = lowLET_total, 
-                                      alph_low = coef[["lowLET"]]) - I, 
-                                      interval = c(0, 20000), 
-                                      extendInt = "yes", 
-                                      tol = 10 ^ - 10)$root
+          low_der(dose, LET = lowLET_total, 
+                  alph_low = coef[["lowLET"]]) - I, 
+          interval = c(0, 20000), 
+          extendInt = "yes", 
+          tol = 10 ^ - 10)$root
         dI[length(LET) + 1] <- lowLET_ratio * low_LET_slope(u[length(LET) + 1], 
                                                             LET = lowLET_total)
       }
