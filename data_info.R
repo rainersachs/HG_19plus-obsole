@@ -43,6 +43,7 @@
 #   "HG"      = Harderian Gland
 #   "IEA"     = Incremental Effect Additivity
 #   "LET"     = Linear energy transfer; stopping power
+#   "NSRL"    = NASA Space Radiation Laboratory in Brookhaven NY
 #   "NTE"     = Non-targeted effects
 #   "SEA"     = Simple Effect Additivity
 #   "TE"      = Targeted effects
@@ -50,25 +51,14 @@
 
 rm(list=ls()) 
 
-# Data used is that in 16Chang plus new data becoming available in the summer of 2018 and later.
-# rks_raw_data_ordered.csv includes data analyzed in .93Alp and .94Alp. Does not 
-# include gamma-ray data. Includes LET=100 keV/micron for Ti, an ad-hoc compromise
-# between lower value at beam entry and higher value at mouse cage.
-
+# Data used is that in 16Chang plus later NSRL data scored before 3/31/2019.
 ion_data <- data.frame(read.csv("one_ion.csv")) 
-mix_data <- data.frame(read.csv("mix_ion.csv")) 
+mix_data <- data.frame(read.csv("mix_ion.csv"))
+
+Y_0 <- 0.04604 # HG tumor prevalence for sham irradiated controls. 
+# Y_0 SD = 0.01 but this value is not used. Edward: 2 lines added 6/2/2019
+
 # Filter NA entries, determined by the existence of a dose value.
 ion_data <- ion_data[!(is.na(ion_data$dose)), ]
 mix_data <- mix_data[!(is.na(mix_data$dose)), ]
-# The two .csv files contain all input HG data. Changes in the data set such 
-# as additions, corrections, or deletions should be made only in the .csv files.
-# Such changes will then be implemented automatically by the scripts 
-# everywhere else.
-
-# The following, which shows how to compute ion speed and the Katz amorphous track structure parameter,
-# may be used for adding Cucinotta's models in 16 Chang to our scripts and comparing them to our more parsimonious models.
-# GeVu is kinetic energy per atomic mass unit. An example for 670Ne20 is GeVu =10^-3*670.
-# The calculations here can and will approximate Z_eff by Z, e.g. Z_eff = 10 for Ne.
-#Katz = 1/round(Z^2 * (2.57 * GeVu ^2 + 4.781 * GeVu + 2.233) / (2.57 * GeVu ^2 + 4.781 * GeVu), 3) 
-#special relativistic calculation of Z^2/beta^2. The numerics include conversion from GeV to joules and from u to kg.
-#beta_star =Z*round(sqrt(1 / Katz), 3) #  i.e. beta = Z*sqrt(beta^2/Z^2). 
+# The two .csv files contain all input HG data except Y_0
