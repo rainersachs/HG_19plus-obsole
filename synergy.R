@@ -18,8 +18,12 @@ source("data_info.R") # Load in the data. Remark: dose is in units of cGy;
 
 library(deSolve) # Solving differential equations.
 library(minpack.lm) # Package for non-linear regression 
+
+
+
 library(mvtnorm) # Package for calculating confidence intervals by Monte Carlo 
-# simulation based on variance-covariance matrices 
+                  # simulation based on variance-covariance matrices 
+                  
 library(Hmisc) # Plotting, e.g. ribbons
 library(dplyr) # Helps manipulate data frames
 
@@ -29,24 +33,21 @@ library(dplyr) # Helps manipulate data frames
 # needed for later synergy calculations. 
 # d_0 = 1 / phi = 5 x 10-4 cGy = 5 x 10^-6 Gy.
 
-Y_0 <- 0.04604 # HG tumor prevalence for sham irradiated controls. 
-# Y_0 SD = 0.01 but this value is not used. 
-
 phi <- 2000 # even larger phi should give the same final results, 
-# but might cause extra problems with R. 
-
+            # but might cause extra problems with R. 
+# Edward: some obsolete files deleted here 6/2/2018
 #================================ DER MODELS ==================================#
 
 #=============== Subsets of 1-ion dataframe =================#
 # (HZE = high charge and energy; 
 HZE_data <- select(filter(ion_data, Z > 3), 1:length(ion_data)) # Includes 1-ion data iff Z > 3
 low_LET_data <- select(filter(ion_data, Z < 4), 1:length(ion_data))  # Swift light ions: here protons and alpha particles.
-
+print(Y_0)
 #=============== HZE/NTE MODEL =================#
 #  NTE = non-targeted effects are included (in addition to TE)
 HZE_nte_model <- nls(  # Calibrate params in model modifying 17Cuc. hazard function NTE models. RKS: Models include Y_0, DERs do not. 
   Prev ~ Y_0 + (1 - exp ( - (aa1 * LET * dose * exp( - aa2 * LET) 
-                             + (1 - exp( - phi * dose)) * kk1))), 
+                               + (1 - exp( - phi * dose)) * kk1))), 
   data = HZE_data, weights = NWeight,
   start = list(aa1 = .00009, aa2 = .001, kk1 = .06))  
 
@@ -54,6 +55,7 @@ summary(HZE_nte_model, correlation = TRUE) # Parameter values & accuracy.
 
 # If a paper uses dose in Gy care is needed in preceding and following lines to rescale from cGy.
 vcov(HZE_nte_model) # Variance-covariance matrix.
+cov2cor(vcov(HZE_nte_model))
 HZE_nte_model_coef <- coef(HZE_nte_model) # Calibrated central values of the 3 parameters.
 aa1 <- HZE_nte_model_coef['aa1']
 aa2 <- HZE_nte_model_coef['aa2']
@@ -61,8 +63,8 @@ kk1 <- HZE_nte_model_coef['kk1']
 
 # The DER, = 0 at dose 0.
 calibrated_nte_hazard_func <- function(dose, LET, coef) { # Calibrated hazard function. 
-  return(coef[1] * LET * dose * exp( - coef[2] * LET) 
-         + (1 - exp( - phi * dose)) * coef[3])
+ return(coef[1] * LET * dose * exp( - coef[2] * LET) 
+        + (1 - exp( - phi * dose)) * coef[3])
 } 
 
 calibrated_HZE_nte_der <- function(dose, LET, coef = HZE_nte_model_coef) { # Calibrated HZE NTE DER.
@@ -80,6 +82,7 @@ HZE_te_model <- nls( # Calibrating parameters in a TE only model.
 
 summary(HZE_te_model, correlation = TRUE) # Parameter values & accuracy.
 vcov(HZE_te_model) # Variance-covariance matrix.
+cov2cor(vcov(HZE_te_model))
 HZE_te_model_coef <- coef(HZE_te_model) # Calibrated central values of the 2 parameters. 
 
 # The DER, = 0 at dose 0.
@@ -133,8 +136,7 @@ set_list <- list(O_350, Ne_670, Si_260, Ti_1000,
                  Fe_600, Fe_350, Nb_600, La_593)
 actual_prev <- HZE_data$Prev
 
-#' @description Applies cross validation to a mixture of ions with respect to 
-#'              a synergy theory.
+#' @description Applies Simple Effect Additivity to get a baseline mixture DER. RKS 5/14/19 what is this?? why SEA?? also why the prime on #' in lines 139 to 159?
 #' 
 #' @param ions List of dataframes corresponding to ion.
 #' @param model String, "NTE" or "TE" for non-targeted or targeted effects.
@@ -166,7 +168,7 @@ cross_val <- function(ions, model, prev, w) {
     }
     if (model == "NTE") {
       f <- Prev ~ Y_0 + (1 - exp ( -(aa1 * LET * dose * exp( -aa2 * LET) 
-                                     + (1 - exp( - phi * dose)) * kk1)))
+                      + (1 - exp( - phi * dose)) * kk1)))
       s <- list(aa1 = .00009, aa2 = .001, kk1 = .06)
     } else {
       f <- Prev ~ Y_0 + (1 - exp ( -(aate1 * LET * dose * exp( -aate2 * LET))))
@@ -266,7 +268,7 @@ calculate_id <- function(dose, LET, ratios, model = "NTE",
                          phi = 2000) {
   dE <- function(yini, state, pars) { # Constructing an ODE from the DERS.
     with(as.list(c(state, pars)), {
-      
+
       # Screen out low LET values.
       lowLET_total <- lowLET_ratio <- 0
       remove <- c()
@@ -296,11 +298,11 @@ calculate_id <- function(dose, LET, ratios, model = "NTE",
       if (lowLET_ratio > 0) { 
         # If low-LET DER is present then include it at the end of the dI vector. RKS: make it first as asked for above? last as asked for here? any location at all, which seems to work?
         u[length(LET) + 1] <- uniroot(function(dose) 
-          low_der(dose, LET = lowLET_total, 
-                  alph_low = coef[["lowLET"]]) - I, 
-          interval = c(0, 20000), 
-          extendInt = "yes", 
-          tol = 10 ^ - 10)$root
+                                      low_der(dose, LET = lowLET_total, 
+                                      alph_low = coef[["lowLET"]]) - I, 
+                                      interval = c(0, 20000), 
+                                      extendInt = "yes", 
+                                      tol = 10 ^ - 10)$root
         dI[length(LET) + 1] <- lowLET_ratio * low_LET_slope(u[length(LET) + 1], 
                                                             LET = lowLET_total)
       }
