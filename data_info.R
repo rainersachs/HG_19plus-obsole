@@ -58,7 +58,7 @@ mix_data <- data.frame(read.csv("mix_ion.csv"))
 Y_0 <- 0.046404 # HG tumor prevalence for sham irradiated controls.
 # Y_0 SD = 0.01 but this value is not used. Edward: lines added 6/2/2019
 
-# Y_0 <- 0.025 # sometimes used to test robustness vis-vis Y_0 changes
+#Y_0 <- 0.025 # sometimes used to test robustness vis-vis Y_0 changes
 # Y_0 <- 0.035 # ditto
 # Y_0 <- 0.055 # ditto
 
