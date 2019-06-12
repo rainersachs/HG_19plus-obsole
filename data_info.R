@@ -55,6 +55,13 @@ rm(list=ls())
 ion_data <- data.frame(read.csv("one_ion.csv")) 
 mix_data <- data.frame(read.csv("mix_ion.csv"))
 
+Y_0 <- 0.046404 # HG tumor prevalence for sham irradiated controls.
+# Y_0 SD = 0.01 but this value is not used. Edward: lines added 6/2/2019
+
+#Y_0 <- 0.025 # sometimes used to test robustness vis-vis Y_0 changes
+# Y_0 <- 0.035 # ditto
+# Y_0 <- 0.055 # ditto
+
 # Filter NA entries, determined by the existence of a dose value.
 ion_data <- ion_data[!(is.na(ion_data$dose)), ]
 mix_data <- mix_data[!(is.na(mix_data$dose)), ]
