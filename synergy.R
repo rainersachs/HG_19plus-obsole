@@ -282,16 +282,17 @@ calculate_id <- function(dose, LET, ratios, model = "NTE",
       }
       LET <- c(setdiff(LET, remove))
       ratios <- ratios[! ratios == 0]
-      
+      # print(I) # Sometimes choosing 0 as the left hand side of the interval leads to the ODE solver crashing. Not sure how to handle this generally.
       # Begin calculating dI values.
       aa <- u <- dI <- vector(length = length(LET))
       if (length(LET) > 0) {
         for (i in 1:length(LET)) { 
           aa[i] <- pars[1] * LET[i] * exp( - pars[2] * LET[i])
           u[i] <- uniroot(function(dose) HZE_der(dose, LET[i], pars) - I,  
-                          interval = c(0, 20000), 
+                          interval = c(0.01, 20000), # Sadly the choice of 0.1 is not arbitrary. Choosing 0 sometimes 
                           extendInt = "yes", 
-                          tol = 10 ^ - 10)$root 
+                          tol = 10 ^ - 10,
+                          maxiter = 10000)$root 
           dI[i] <- ratios[i] * calc_dI(aa[i], u[i], pars[3]) 
         }
       }
@@ -300,9 +301,10 @@ calculate_id <- function(dose, LET, ratios, model = "NTE",
         u[length(LET) + 1] <- uniroot(function(dose) 
                                       low_der(dose, LET = lowLET_total, 
                                       alph_low = coef[["lowLET"]]) - I, 
-                                      interval = c(0, 20000), 
+                                      interval = c(0.01, 20000), 
                                       extendInt = "yes", 
-                                      tol = 10 ^ - 10)$root
+                                      tol = 10 ^ - 10,
+                                      maxiter = 10000)$root
         dI[length(LET) + 1] <- lowLET_ratio * low_LET_slope(u[length(LET) + 1], 
                                                             LET = lowLET_total)
       }
@@ -313,7 +315,7 @@ calculate_id <- function(dose, LET, ratios, model = "NTE",
             HZE_der = ders[[model]], 
             low_der = ders[["lowLET"]], 
             calc_dI = calculate_dI[[model]])
-  return(ode(c(I = 0), times = dose, dE, parms = p, method = "radau"))
+  return(ode(c(I = 0), times = dose, dE, parms = p))
 }
 
 #============= dI HIDDEN FUNCTIONS =============#
