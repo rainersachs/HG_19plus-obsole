@@ -70,7 +70,7 @@ print(Y_0) # amount data points shifted down compared to DER curves etc.
 ##==================================================#
 #== Fig.4A_final Fe DERs. points, error bars, SHIFTED==#
 ##==================================================#
-d1_Fe <- c(0.01 * 0:9, 0.1 * 1:9, 1:80)
+d1_Fe <- c(0.001 * 0:9, 0.01 * 1:9,.1*1:9, 1:80)
 fe_six = calibrated_HZE_te_der(dose = d1_Fe, L = 193) #TE-only Fe600 1-ion DER
 plot(c(0, 80.1), c(0, .65), col = "white", bty = 'L', ann = FALSE) # Set plot area
 lines(d1_Fe, fe_six, col = 'black') # Fe TE-only 1-ion DER, no background
@@ -152,7 +152,7 @@ ci_data <- data.frame(dose = d5_new,
                       # IEA baseline mixture DER I(d), denoted by id below
                       i = calculate_id(d5_new, LET_vals, ratios, model = "NTE")[, 2])
 
-plot(c(0, 71), c(0,.62), col = "white", bty = 'L', ann = FALSE) # Set plot area
+plot(c(0, 70.1), c(0, 0.601), col = "white", bty = 'l', ann = FALSE) # Set plot area
 polygon(x = c(d5_new, rev(d5_new)), y = c(ci_data[, "corrTop"], rev(ci_data[, "corrBottom"])),
         xpd = -1, col = "yellow", lwd = .4, border = "orange") # Narrow CI ribbon
 fe_six_one = calibrated_HZE_nte_der(dose = d5_Fe, L = 193)
@@ -188,7 +188,7 @@ ci_data <- data.frame(dose = d5_new,
                       # IEA baseline mixture DER I(d), denoted by id below
                       i = calculate_id(d5_new, LET_vals, ratios, model = "TE")[, 2])
 
-plot(c(0, 71), c(0,.62), col = "white", bty = 'L', ann = FALSE) # Set plot area
+plot(c(0, 70.1), c(0, 0.601), col = "white", bty = 'l', ann = FALSE) # Set plot area
 polygon(x = c(d5_new, rev(d5_new)), y = c(ci_data[, "corrTop"], rev(ci_data[, "corrBottom"])),
         xpd = -1, col = "yellow", lwd = .4, border = "orange") # Narrow CI ribbon
 fe_six_te_one = calibrated_HZE_te_der(dose = d5_Fe, L = 193)
