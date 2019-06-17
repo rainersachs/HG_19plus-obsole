@@ -28,6 +28,14 @@ library(Hmisc) # Plotting, e.g. ribbons
 library(dplyr) # Helps manipulate data frames
 
 #========================= MISC. OBJECTS & VARIABLES ==========================#
+Y_0 <- 0.046404 # HG tumor prevalence for sham irradiated controls.
+
+# Common alternate background values:
+# Y_0 # SD = 0.01 but this value is not used. 
+# Y_0 <- 0.025 # Sometimes used to test robustness vis-vis Y_0 changes.
+# Y_0 <- 0.035 # ditto
+# Y_0 <- 0.055 # ditto
+
 # In next line phi controls how fast NTE build up from zero; not really needed 
 # during calibration since phi * Dose >> 1 at every observed Dose !=0. phi is
 # needed for later synergy calculations. 
@@ -289,7 +297,7 @@ calculate_id <- function(dose, LET, ratios, model = "NTE",
         for (i in 1:length(LET)) { 
           aa[i] <- pars[1] * LET[i] * exp( - pars[2] * LET[i])
           u[i] <- uniroot(function(dose) HZE_der(dose, LET[i], pars) - I,  
-                          interval = c(0.01, 20000), # Sadly the choice of 0.1 is not arbitrary. Choosing 0 sometimes 
+                          interval = c(0.01, 20000), # Sadly the choice of 0.01 is not arbitrary. Choosing 0 sometimes 
                           extendInt = "yes", 
                           tol = 10 ^ - 10,
                           maxiter = 10000)$root 
