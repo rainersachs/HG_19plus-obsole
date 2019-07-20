@@ -125,71 +125,64 @@ info_crit_table <- cbind(AIC(HZE_te_model, HZE_nte_model),
                          BIC(HZE_te_model, HZE_nte_model))
 print(info_crit_table)
 
-##=================== Cross validation ====================#
+##=================== Cross validation ====================##
 # Seperate Data into 8 blocks, i.e. test/training sets:
 data_len <- 1:length(HZE_data)
-O_350 <- select(filter(HZE_data, Beam == "O"), data_len) 
-Ne_670 <- select(filter(HZE_data, Beam == "Ne"), data_len)
-Si_260 <- select(filter(HZE_data, Beam == "Si"), data_len)
-Ti_1000 <- select(filter(HZE_data, Beam == "Ti"), data_len)
+O_350 <- select(filter(HZE_data, LET == 20), data_len) #RKS added 3 oxygen points 5/17/2019)
+Ne_670 <- select(filter(HZE_data, LET == 25), data_len) # Beam data not labeled
+Si_260 <- select(filter(HZE_data, LET == 70), data_len)
+Ti_1000 <- select(filter(HZE_data, LET == 100), data_len)
 Fe_600 <- select(filter(HZE_data, LET == 193), data_len)
 Fe_350 <- select(filter(HZE_data, LET == 253), data_len)
-Nb_600 <- select(filter(HZE_data, Beam == "Nb"), data_len)
-La_593 <- select(filter(HZE_data, Beam == "La"), data_len)
-set_list <- list(O_350, Ne_670, Si_260, Ti_1000, 
+Nb_600 <- select(filter(HZE_data, LET == 464), data_len)
+La_593 <- select(filter(HZE_data, LET == 953), data_len)
+set_list <- list(O_350, Ne_670, Si_260, Ti_1000,
                  Fe_600, Fe_350, Nb_600, La_593)
 actual_prev <- HZE_data$Prev
 
-#' @title Applies cross validation to a mixture of ions with respect to
-#'        a synergy theory.
-#'
-#' @description Not well tested.
-#'
-#' @param ions List of dataframes corresponding to ion.
-#' @param model String, "NTE" or "TE" for non-targeted or targeted effects.
-#' @param prev Numeric vector of observed prevalence values.
-#' @param w Numeric vector of experimental weights.
-#'
-#' @details Weight vector elements should correspond to dataframe element order.
-#'          i.e. w[n] = ions[length(ions[:, 1]) / n][length(ions[:, 1]) % n]
-#'
-#' @return Numeric weighted mean errors.
-#'
-#' @details Tested for the two examples below. General correctness is
-#'          unverified and should be treated at some future data.
-#'
-#' @examples
-
-cross_val <- function(ions, model, prev, w) {
-  theoretical <- vector()
-  for (i in 1:length(ions)) {
-    test <- ions[[i]]
-    excluded_list <- ions[-i]
-    train <- excluded_list[[1]]
-    for (j in 2:length(excluded_list)) {
-      train <- rbind(train, excluded_list[[j]])
-    }
-    if (model == "NTE") {
-      f <- Prev ~ Y_0 + (1 - exp ( -(aa1 * LET * dose * exp( -aa2 * LET) 
-                      + (1 - exp( - phi * dose)) * kk1)))
-      s <- list(aa1 = .00009, aa2 = .001, kk1 = .06)
-    } else {
-      f <- Prev ~ Y_0 + (1 - exp ( -(aate1 * LET * dose * exp( -aate2 * LET))))
-      s <- list(aate1 = .00009, aate2 = .01)
-    }
-    m <- nls(f, data = train, weights = NWeight, start = s)
-    pred <- predict(m, test)
-    theoretical <- c(theoretical, pred)
+# Old --------------------------------------------------------------------------
+# # Cross Validation for NTE Model:
+theoretical <- vector()
+for (i in 1:length(set_list)) {
+  test <- set_list[[i]]
+  excluded_list <- set_list[-i]
+  train <- excluded_list[[1]]
+  for (j in 2:length(excluded_list)) {
+    train <- rbind(train, excluded_list[[j]])
   }
-  errors <- (theoretical - prev) ^ 2
-  return(weighted.mean(errors, w))
+  HZE_nte_model <- nls(Prev ~ Y_0 + (1 - exp ( - (aa1 * LET * dose * exp( - aa2 * LET) + (1 - exp( - phi * dose)) * kk1))),
+                       data = train,
+                       weights = NWeight,
+                       start = list(aa1 = .00009, aa2 = .001, kk1 = .06))
+  predic <- predict(HZE_nte_model, test)
+  theoretical <- c(theoretical, predic)
 }
+errors <- (theoretical - actual_prev)^2
+NTE_cv <- weighted.mean(errors, HZE_data$NWeight)
 
-NTE_cv <- cross_val(set_list,"NTE", HZE_data$Prev, HZE_data$NWeight)
-TE_cv <- cross_val(set_list, "TE", HZE_data$Prev, HZE_data$NWeight)
+#======= Cross Validation for TE Model  ========#
+theoretical <- vector()
+for (i in 1:8) {
+  test <- set_list[[i]]
+  excluded_list <- set_list[-i]
+  train <- excluded_list[[1]]
+  for (j in 2:length(excluded_list)) {
+    train <- rbind(train, excluded_list[[j]])
+  }
+  HZE_te_model <- nls(Prev ~ Y_0 + (1 - exp ( - (aate1 * LET * dose * exp( - aate2 * LET)))),
+                      data = train,
+                      weights = NWeight,
+                      start = list(aate1 = .00009, aate2 = .01))
+  predic <- predict(HZE_te_model, test)
+  theoretical <- c(theoretical, predic)
+}
+errors <- (theoretical - actual_prev)^2
+TE_cv <- weighted.mean(errors, HZE_data$NWeight)
 
 CV_table <- cbind(NTE_cv, TE_cv)
-print(CV_table)
+CV_table
+
+
 #=========== BASELINE NO-SYNERGY/ANTAGONISM MIXTURE DER FUNCTIONS =============#
 
 #======== SIMPLE EFFECT ADDITIVITY (SEA) =======#
