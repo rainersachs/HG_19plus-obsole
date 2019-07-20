@@ -98,22 +98,44 @@ simulate_monte_carlo <- function(n = 200, dose, LET, ratios, model = "NTE",
     samples <- mapply(rnorm, rep(n, num_coef), coef(ion_model), 
                       summary(ion_model)$coefficients[, "Std. Error"])
   }
-  curve_list <- list(0)
+  curve_list <- list() 
+  start <- proc.time() # Starting time
+  fail_count <- 0
   for (i in 1:n) {
-    if (model == "NTE") {
-      curve_list[[i]] <- calculate_id(dose, LET, ratios, 
-                                      coef = list(NTE = samples[i, ],
-                                      lowLET = low_LET_samples[i]),
-                                      model = "NTE")
-    } else if (model == "TE") {
-      curve_list[[i]] <- calculate_id(dose, LET, ratios,
-                                      coef = list(TE = samples[i, ],
-                                      lowLET = low_LET_samples[i]),
-                                      model = "TE")
-    }
-    cat(paste("  Currently at Monte Carlo step:", toString(i), "of", 
-              toString(n)), sprintf('\r'))
+    result <- tryCatch( # Counter implementation
+      {
+        if (model == "NTE") {
+          out <- calculate_id(dose, LET, ratios, coef = list(NTE = samples[i, ],
+                              lowLET = low_LET_samples[i]), model = "NTE")
+        } else if (model == "TE") {
+          out <- calculate_id(dose, LET, ratios, coef = list(TE = samples[i, ],
+                              lowLET = low_LET_samples[i]), model = "TE")
+        }
+        curve_list[[length(curve_list) + 1]] <- out # Appends successful results
+        message("Currently at Monte Carlo step: ", i, " of ", n,
+                ". Elapsed time: ", (proc.time() - start)[["elapsed"]],
+                " seconds.", rep(" ", 15), "\r", appendLF = FALSE)
+        0 # Increments failure count by zero
+      },
+      error = function(cond) {
+        message("Failure [", fail_count + 1, "] at step [", i,  
+                "] after [", (proc.time() - start)[["elapsed"]], 
+                "] seconds.", rep(" ", 50))
+        message("\n", cond) # Prints original error message
+        return(1) # Increments by one
+      },
+      warning = function(cond) {
+        message("Warning at step ", i, " of ", n, " after ", 
+                (proc.time() - start)[["elapsed"]], " seconds.", rep(" ", 50))
+        message("\n", cond) # Prints original warning message
+        return(0) # Increments by zero
+      },
+      finally = { # Prints step information
+      }
+    )
+    fail_count <- fail_count + result # Applies the increment
   }
+  message("\n", "Total number of failures: ", fail_count)
   return(curve_list)
 }
 
